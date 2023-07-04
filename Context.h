@@ -57,14 +57,14 @@ void updatePhysicalSystem(Context* context, float dt, int num_constraint_relaxat
 // ------------------------------------------------
 
 void applyExternalForce(Context* context, float dt);
-void checkContactWithSphere(Context* context, int particle_id, int sphere_id);
-void checkContactWithPlane(Context* context, int particle_id, int plane_id);
-void checkContactWithParticle(Context* context, int particle1_id, int particle2_id);
+int checkContactWithSphere(Context* context, int particle_id, int sphere_id);
+int checkContactWithPlane(Context* context, int particle_id, int plane_id);
+int checkContactWithParticle(Context* context, int particle1_id, int particle2_id);
 void updateExpectedPosition(Context* context, float dt);
 void addDynamicContactConstraints(Context* context);
 void addStaticContactConstraints(Context* context);
-void enforceStaticGroundConstraint(Context* context, Particle* particle);
-void enforceDynamicConstraint(Context* context, Particle* particle);
+void enforceStaticGroundConstraint(Context* context, int particle_id);
+void enforceDynamicConstraint(Context* context, int particle_id);
 void projectConstraints(Context* context);
 void updateVelocityAndPosition(Context* context, float dt);
 

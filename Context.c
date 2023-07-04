@@ -56,15 +56,26 @@ void addParticle(Context* context, float x, float y, float speed_x, float speed_
 
 	if (context->num_particles == context->capacity)
 	{
-		context->capacity *= 2;
-		Particle* particles = malloc(context->capacity * sizeof(Particle));
-		memset(particles,0,context->capacity*sizeof(Particle));
+		Particle* particles = malloc(2 * context->capacity * sizeof(Particle));
+		memset(particles, 0, 2 * context->capacity * sizeof(Particle));
 		int i;
 		for (i=0; i < context->num_particles; i++)
 		{
 			particles[i] = getParticle(context, i);
+			int* links = malloc(2 * context->capacity * sizeof(int));
+			int j;
+		    for (j=0; j < context->capacity; j++)
+		    {
+		    	links[j] = particles[i].links[j];
+			}
+			for (j=context->capacity; j < 2 * context->capacity; j++)
+			{
+				links[j] = 0;
+			}
+			particles[i].links = links;
 		}
 		context->particles = particles;
+		context->capacity *= 2;
 	}
 	
     context->particles[context->num_particles].position.x = x;
@@ -74,8 +85,16 @@ void addParticle(Context* context, float x, float y, float speed_x, float speed_
     context->particles[context->num_particles].inv_mass = 1.0F/mass;
     context->particles[context->num_particles].radius = radius;
     context->particles[context->num_particles].draw_id = draw_id;
-    context->particles[context->num_particles].status = 0;
-    context->particles[context->num_particles].links = 0;
+    //context->particles[context->num_particles].status = 0;
+    //context->particles[context->num_particles].links = 0;
+    int* links = malloc(context->capacity * sizeof(int));
+    int i;
+    for (i=0; i < context->capacity; i++)
+    {
+    	links[i] = 0;
+	}
+	context->particles[context->num_particles].links = links;
+	
     context->num_particles += 1;
 }
 
@@ -85,14 +104,23 @@ void addCoupledParticles(Context* context, float x, float y, float speed_x, floa
 	addParticle(context, x + 2*radius, y, speed_x, speed_y, radius, mass, draw_id2);
 	addParticle(context, x, y + 2*radius, speed_x, speed_y, radius, mass, draw_id3);
 	addParticle(context, x + 2*radius, y + 2*radius, speed_x, speed_y, radius, mass, draw_id4);
-	getParticlePointer(context, context->num_particles - 4)->links += 1 << (context->num_particles - 3);
-	getParticlePointer(context, context->num_particles - 4)->links += 1 << (context->num_particles - 2);
-	getParticlePointer(context, context->num_particles - 3)->links += 1 << (context->num_particles - 4);
-	getParticlePointer(context, context->num_particles - 3)->links += 1 << (context->num_particles - 1);
-	getParticlePointer(context, context->num_particles - 2)->links += 1 << (context->num_particles - 4);
-	getParticlePointer(context, context->num_particles - 2)->links += 1 << (context->num_particles - 1);
-	getParticlePointer(context, context->num_particles - 1)->links += 1 << (context->num_particles - 3);
-	getParticlePointer(context, context->num_particles - 1)->links += 1 << (context->num_particles - 2);
+//	getParticlePointer(context, context->num_particles - 4)->links += 1 << (context->num_particles - 3);
+//	getParticlePointer(context, context->num_particles - 4)->links += 1 << (context->num_particles - 2);
+//	getParticlePointer(context, context->num_particles - 3)->links += 1 << (context->num_particles - 4);
+//	getParticlePointer(context, context->num_particles - 3)->links += 1 << (context->num_particles - 1);
+//	getParticlePointer(context, context->num_particles - 2)->links += 1 << (context->num_particles - 4);
+//	getParticlePointer(context, context->num_particles - 2)->links += 1 << (context->num_particles - 1);
+//	getParticlePointer(context, context->num_particles - 1)->links += 1 << (context->num_particles - 3);
+//	getParticlePointer(context, context->num_particles - 1)->links += 1 << (context->num_particles - 2);
+
+	getParticlePointer(context, context->num_particles - 4)->links[context->num_particles - 3] = 1;
+	getParticlePointer(context, context->num_particles - 4)->links[context->num_particles - 2] = 1;
+	getParticlePointer(context, context->num_particles - 3)->links[context->num_particles - 4] = 1;
+	getParticlePointer(context, context->num_particles - 3)->links[context->num_particles - 1] = 1;
+	getParticlePointer(context, context->num_particles - 2)->links[context->num_particles - 4] = 1;
+	getParticlePointer(context, context->num_particles - 2)->links[context->num_particles - 1] = 1;
+	getParticlePointer(context, context->num_particles - 1)->links[context->num_particles - 3] = 1;
+	getParticlePointer(context, context->num_particles - 1)->links[context->num_particles - 2] = 1;
 }
 
 // ------------------------------------------------
@@ -169,8 +197,8 @@ void updatePhysicalSystem(Context* context, float dt, int num_constraint_relaxat
 	applyExternalForce(context, dt);
 	updateExpectedPosition(context, dt);
 
-	addDynamicContactConstraints(context);
-	addStaticContactConstraints(context);
+	//addDynamicContactConstraints(context);
+	//addStaticContactConstraints(context);
 
 	int k;
 	for(k=0; k<num_constraint_relaxation; ++k)
@@ -198,59 +226,65 @@ void applyExternalForce(Context* context, float dt)
 	}
 }
 
-void checkContactWithSphere(Context* context, int particle_id, int sphere_id)
+int checkContactWithSphere(Context* context, int particle_id, int sphere_id)
 {
 	Particle* particle = getParticlePointer(context, particle_id);
 	SphereCollider* sphere = context->ground_spheres + sphere_id;
 	if (norm(subs(particle->next_pos, sphere->center)) <= sphere->radius + particle->radius)
 	{
-		particle->status = particle->status | (1 << sphere_id);
+		//particle->status = particle->status | (1 << sphere_id);
+		return 1;
 	}
 	else
 	{
-		if (((particle->status >> sphere_id) & 1) == 1)
-		{
-			particle->status -= 1 << sphere_id;
-		}
+		//if (((particle->status >> sphere_id) & 1) == 1)
+		//{
+		//	particle->status -= 1 << sphere_id;
+		//}
+		return 0;
 	}
 }
 
-void checkContactWithPlane(Context* context, int particle_id, int plane_id)
+int checkContactWithPlane(Context* context, int particle_id, int plane_id)
 {
 	Particle* particle = getParticlePointer(context, particle_id);
 	PlaneCollider* plane = context->ground_planes + plane_id;
 	if (dot(subs(particle->next_pos, plane->center), plane->normal) <= particle->radius)
 	{
-		particle->status = particle->status | (1 << (context->num_ground_sphere + plane_id));
+		//particle->status = particle->status | (1 << (context->num_ground_sphere + plane_id));
+		return 1;
 	}
 	else
 	{
-		if (((particle->status >> (context->num_ground_sphere + plane_id)) & 1) == 1)
-		{
-			particle->status -= 1 << (context->num_ground_sphere + plane_id);
-		}
+		//if (((particle->status >> (context->num_ground_sphere + plane_id)) & 1) == 1)
+		//{
+		//	particle->status -= 1 << (context->num_ground_sphere + plane_id);
+		//}
+		return 0;
 	}
 }
 
-void checkContactWithParticle(Context* context, int particle1_id, int particle2_id)
+int checkContactWithParticle(Context* context, int particle1_id, int particle2_id)
 {
 	Particle* particle1 = getParticlePointer(context, particle1_id);
 	Particle* particle2 = getParticlePointer(context, particle2_id);
 	if (norm(subs(particle1->next_pos, particle2->next_pos)) <= particle1->radius + particle2->radius && particle1_id != particle2_id)
 	{
-		particle1->status = particle1->status | (1 << (context->num_ground_sphere + context->num_ground_plane + particle2_id));
-		particle2->status = particle2->status | (1 << (context->num_ground_sphere + context->num_ground_plane + particle1_id));
+		//particle1->status = particle1->status | (1 << (context->num_ground_sphere + context->num_ground_plane + particle2_id));
+		//particle2->status = particle2->status | (1 << (context->num_ground_sphere + context->num_ground_plane + particle1_id));
+		return 1;
 	}
 	else
 	{
-		if (((particle1->status >> (context->num_ground_sphere + context->num_ground_plane + particle2_id)) & 1) == 1) // if there is currently no contact but there was one previously
-		{
-			particle1->status -= 1 << (context->num_ground_sphere + context->num_ground_plane + particle2_id); // update the status so as to mark no contact
-		}
-		if (((particle2->status >> (context->num_ground_sphere + context->num_ground_plane + particle1_id)) & 1) == 1) // if there is currently no contact but there was one previously
-		{
-			particle2->status -= 1 << (context->num_ground_sphere + context->num_ground_plane + particle1_id); // update the status so as to mark no contact
-		}
+		//if (((particle1->status >> (context->num_ground_sphere + context->num_ground_plane + particle2_id)) & 1) == 1) // if there is currently no contact but there was one previously
+		//{
+		//	particle1->status -= 1 << (context->num_ground_sphere + context->num_ground_plane + particle2_id); // update the status so as to mark no contact
+		//}
+		//if (((particle2->status >> (context->num_ground_sphere + context->num_ground_plane + particle1_id)) & 1) == 1) // if there is currently no contact but there was one previously
+		//{
+		//	particle2->status -= 1 << (context->num_ground_sphere + context->num_ground_plane + particle1_id); // update the status so as to mark no contact
+		//}
+		return 0;
 	}
 }
 
@@ -292,12 +326,14 @@ void addStaticContactConstraints(Context* context)
   }
 }
 
-void enforceStaticGroundConstraint(Context* context, Particle* particle)
+void enforceStaticGroundConstraint(Context* context, int particle_id)
 {
+	Particle* particle = getParticlePointer(context, particle_id);
 	int i;
   	for (i=0; i < context->num_ground_sphere; i++)
   	{
-  		if (((particle->status >> i) & 1) == 1)  // if there is a contact with the sphere i
+  		//if (((particle->status >> i) & 1) == 1)  // if there is a contact with the sphere i
+  		if (checkContactWithSphere(context, particle_id, i) == 1)
   		{ 			
  			SphereCollider* sphere = context->ground_spheres + i;
  			
@@ -332,8 +368,9 @@ void enforceStaticGroundConstraint(Context* context, Particle* particle)
 	}
   	for (i=0; i < context->num_ground_plane; i++)
   	{
-  		if (((particle->status >> (i + context->num_ground_sphere)) & 1) == 1) // if there is a contact with the plane i
-  		{
+  		//if (((particle->status >> (i + context->num_ground_sphere)) & 1) == 1) // if there is a contact with the plane i
+  		if (checkContactWithPlane(context, particle_id, i) == 1)
+		{
   			PlaneCollider* plane = context->ground_planes + i;
 
 		//---------------------------------------------------------------------------------------
@@ -391,12 +428,15 @@ void enforceStaticGroundConstraint(Context* context, Particle* particle)
 	}	
 }
 
-void enforceDynamicConstraint(Context* context, Particle* particle)
+void enforceDynamicConstraint(Context* context, int particle_id)
 {
+	Particle* particle = getParticlePointer(context, particle_id);
 	int i;
   	for (i=0; i < context->num_particles; i++)
   	{
-		if ((particle->links >> i & 1) == 1)  // if there is a link with the particle i
+		//if ((particle->links >> i & 1) == 1)  // if there is a link with the particle i
+		//printf("%d ", particle->links[i]);
+		if (particle->links[i] == 1)
 		{
  			Particle* other = getParticlePointer(context, i);
 //  		Vec2 v1 = normalize(subs(particle->next_pos, other->next_pos));
@@ -410,8 +450,9 @@ void enforceDynamicConstraint(Context* context, Particle* particle)
 			particle->next_pos = subs(particle->next_pos, mult(normalize(d), C * particle->inv_mass / (particle->inv_mass + other->inv_mass)));
 		}
 		
-  		else if (((particle->status >> (i + context->num_ground_sphere + context->num_ground_plane)) & 1) == 1)  // if there is a contact with the particle i
-  		{ 			
+  		//else if (((particle->status >> (i + context->num_ground_sphere + context->num_ground_plane)) & 1) == 1)  // if there is a contact with the particle i
+  		else if (checkContactWithParticle(context, particle_id, i) == 1)
+		{ 			
  			Particle* other = getParticlePointer(context, i);
 //  		Vec2 v1 = normalize(subs(particle->next_pos, other->next_pos));
 //  		Vec2 v2 = mult(v1, dot(particle->velocity, v1));
@@ -429,6 +470,7 @@ void enforceDynamicConstraint(Context* context, Particle* particle)
 			}
 		}
 	}
+	//printf("\n");
 }
 
 void projectConstraints(Context* context)
@@ -436,9 +478,9 @@ void projectConstraints(Context* context)
 	int i;
 	for (i = 0; i < context->num_particles; i++)
 	{
-		Particle* particle = getParticlePointer(context, i);
-		enforceDynamicConstraint(context, particle);
-		enforceStaticGroundConstraint(context, particle);
+		//Particle* particle = getParticlePointer(context, i);
+		enforceDynamicConstraint(context, i);
+		enforceStaticGroundConstraint(context, i);
 	}
 }
 
