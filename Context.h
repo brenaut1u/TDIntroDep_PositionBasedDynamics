@@ -5,6 +5,7 @@
 #include "Constraint.h"
 
 #define G 9.81
+#define A 20
 #define BOUNCE_FACTOR 0.0012
 #define MINIMUM_SPEED_FOR_BOUNCE_PLANE 2
 #define MINIMUM_SPEED_FOR_BOUNCE_SPHERE 0.5
@@ -21,6 +22,8 @@ typedef struct Context {
   
   PlaneCollider* ground_planes;
   SphereCollider* ground_spheres;
+  
+  float water_surface;
   
   int capacity;
 } Context;
@@ -61,8 +64,6 @@ int checkContactWithSphere(Context* context, int particle_id, int sphere_id);
 int checkContactWithPlane(Context* context, int particle_id, int plane_id);
 int checkContactWithParticle(Context* context, int particle1_id, int particle2_id);
 void updateExpectedPosition(Context* context, float dt);
-void addDynamicContactConstraints(Context* context);
-void addStaticContactConstraints(Context* context);
 void enforceStaticGroundConstraint(Context* context, int particle_id);
 void enforceDynamicConstraint(Context* context, int particle_id);
 void projectConstraints(Context* context);
@@ -70,3 +71,4 @@ void updateVelocityAndPosition(Context* context, float dt);
 
 // ------------------------------------------------
 
+void freeAll(Context* context);
